@@ -44,14 +44,14 @@ private:
     		upper = true;
     	}
     	
-    	encoded_message[i]+=key;
+    	encoded_message[i]-=key;
     	
     	//check if went under/over
     	while (encoded_message[i] < 'a') {
-    		encoded_message[i]+= 26;
+    		encoded_message[i]+= 27;
     	}
     	while(encoded_message[i] > 'z') {
-    		encoded_message[i]+= 26;
+    		encoded_message[i]+= 27;
     	}
     	
     	//if was uppercase return to uppercase
@@ -59,6 +59,8 @@ private:
     		encoded_message[i] = toupper(encoded_message[i]);
     	}	
     }
+    
+    RCLCPP_INFO(this->get_logger(), "Decoded message is: '%s'", encoded_message.c_str());
      
     //now encoded_message stores decoded message
     
@@ -67,7 +69,7 @@ private:
     //now do client call...
     std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("cipher_client");    
   rclcpp::Client<cipher_interfaces::srv::CipherAnswer>::SharedPtr client =              
-    node->create_client<cipher_interfaces::srv::CipherAnswer>("topic"); 
+    node->create_client<cipher_interfaces::srv::CipherAnswer>("cipher"); 
   
     auto request = std::make_shared<cipher_interfaces::srv::CipherAnswer::Request>();     
     request->answer = encoded_message;
