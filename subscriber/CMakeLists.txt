@@ -12,13 +12,8 @@ find_package(cipher_interfaces REQUIRED)
 add_executable(listener src/subscriber_member_function.cpp)
 ament_target_dependencies(listener rclcpp cipher_interfaces)
 
-add_executable(talker src/publisher_member_function.cpp)
-ament_target_dependencies(talker rclcpp cipher_interfaces)
-
-
 install(TARGETS
   listener
-  talker
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

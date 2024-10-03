@@ -17,8 +17,11 @@ public:
   MinimalSubscriber()
   : Node("minimal_subscriber")
   {
-    subscription_ = this->create_subscription<cipher_interfaces::msg::CipherMessage>( //change type to corrsponding type
-      "topic", 10, std::bind(&MinimalSubscriber::topic_callback, this, _1));
+   	this->declare_parameter("name_of_topic", "topic6");
+   	this->declare_parameter("name_of_service", "cipher");
+   	std::string name_of_topic = this->get_parameter("name_of_topic").as_string(); 
+    subscription_ = this->create_subscription<cipher_interfaces::msg::CipherMessage>( 
+      name_of_topic, 10, std::bind(&MinimalSubscriber::topic_callback, this, _1));
   }
 
 private:
@@ -27,6 +30,7 @@ private:
   //this runs when code heard something in the given topic!! need to call action client from here somehow...
   	std::string encoded_message = msg.message;
   	int key = msg.key;
+  	
   	
     RCLCPP_INFO(this->get_logger(), "Coded message is: '%s'", encoded_message.c_str());
     RCLCPP_INFO(this->get_logger(), "Key is: '%i'", key);
@@ -65,11 +69,11 @@ private:
     //now encoded_message stores decoded message
     
     
-    
     //now do client call...
-    std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("cipher_client");    
+    std::string service_name = this->get_parameter("name_of_service").as_string();
+    std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("cipher_client_node");    
   rclcpp::Client<cipher_interfaces::srv::CipherAnswer>::SharedPtr client =              
-    node->create_client<cipher_interfaces::srv::CipherAnswer>("cipher"); 
+    node->create_client<cipher_interfaces::srv::CipherAnswer>(service_name); 
   
     auto request = std::make_shared<cipher_interfaces::srv::CipherAnswer::Request>();     
     request->answer = encoded_message;
