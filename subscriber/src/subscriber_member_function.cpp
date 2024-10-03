@@ -15,9 +15,9 @@ class MinimalSubscriber : public rclcpp::Node
 {
 public:
   MinimalSubscriber()
-  : Node("minimal_subscriber")
+  : Node("subscriber_action_caller")
   {
-   	this->declare_parameter("name_of_topic", "topic6");
+   	this->declare_parameter("name_of_topic", "topic");
    	this->declare_parameter("name_of_service", "cipher");
    	std::string name_of_topic = this->get_parameter("name_of_topic").as_string(); 
     subscription_ = this->create_subscription<cipher_interfaces::msg::CipherMessage>( 
@@ -25,17 +25,18 @@ public:
   }
 
 private:
-  void topic_callback(const cipher_interfaces::msg::CipherMessage & msg) const //change type to corresponding type
+	//this runs when code heard something in the given topic!!
+  void topic_callback(const cipher_interfaces::msg::CipherMessage & msg) const 
   {
-  //this runs when code heard something in the given topic!! need to call action client from here somehow...
-  	std::string encoded_message = msg.message;
+  	//retrieve message and key from topic
+ 		std::string encoded_message = msg.message;
   	int key = msg.key;
   	
-  	
+  	//log to console (not actually console more like ros console but it will end up in the console)
     RCLCPP_INFO(this->get_logger(), "Coded message is: '%s'", encoded_message.c_str());
     RCLCPP_INFO(this->get_logger(), "Key is: '%i'", key);
     
-    //need to decode message here...
+    //decode message
     
     //loop through each char in the encoded_msg string..
     for (unsigned int i = 0; i < encoded_message.length(); i++) {
@@ -48,6 +49,7 @@ private:
     		upper = true;
     	}
     	
+    	//do inverse of key
     	encoded_message[i]-=key;
     	
     	//check if went under/over
@@ -69,18 +71,22 @@ private:
     //now encoded_message stores decoded message
     
     
-    //now do client call...
+    //now do client call
+    //first get name of service to call to from parameter (set in .yaml launch file)
     std::string service_name = this->get_parameter("name_of_service").as_string();
+    
+    //create the node from which to call (tried to it from same node but couldnt pull it off)
     std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("cipher_client_node");    
-  rclcpp::Client<cipher_interfaces::srv::CipherAnswer>::SharedPtr client =              
-    node->create_client<cipher_interfaces::srv::CipherAnswer>(service_name); 
+ 		rclcpp::Client<cipher_interfaces::srv::CipherAnswer>::SharedPtr client =              
+    	node->create_client<cipher_interfaces::srv::CipherAnswer>(service_name); 
   
+  //create request body
     auto request = std::make_shared<cipher_interfaces::srv::CipherAnswer::Request>();     
     request->answer = encoded_message;
     // request->header = idk
     
     while (!client->wait_for_service(1s)) {
-	    if (!rclcpp::ok()) {
+    	if (!rclcpp::ok()) {
 	      RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Interrupted while waiting for the service. Exiting.");
 	      return;
 	    }
@@ -90,23 +96,23 @@ private:
 		auto result = client->async_send_request(request);
 		// Wait for the result.
 		if (rclcpp::spin_until_future_complete(node, result) ==
-		  rclcpp::FutureReturnCode::SUCCESS)
+			rclcpp::FutureReturnCode::SUCCESS)
 		{
-		  //if in here, then server returned
-		  if(result.get()->result) {
-		  	RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Decripting was correct");
-		  } else {
-		  	RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Decripting failed");
-		  }
+			//if in here, then server returned
+			if(result.get()->result) {
+				RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Decripting was correct");
+			} else {
+				RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Decripting failed");
+			}
 		} else { 	
-		  RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to call service add_three_ints");    
+			RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to call service add_three_ints");    
 		}
 
 		//shutdown
 		rclcpp::shutdown();
-  }
+	}
   
-  rclcpp::Subscription<cipher_interfaces::msg::CipherMessage>::SharedPtr subscription_;
+  	rclcpp::Subscription<cipher_interfaces::msg::CipherMessage>::SharedPtr subscription_;
 };
 
 int main(int argc, char * argv[])
