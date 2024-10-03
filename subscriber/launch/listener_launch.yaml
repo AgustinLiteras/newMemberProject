@@ -1,0 +1,13 @@
+launch:
+
+- node:
+    pkg: "subscriber"
+    exec: "listener"
+    name: "listener_node"
+    param:
+    -
+        name: "name_of_topic"
+        value: "topic"
+    -
+        name: "name_of_service"
+        value: "cipher"
